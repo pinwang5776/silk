@@ -3,7 +3,7 @@ package silk
 import (
 	"io"
 
-	"github.com/youthlin/silk/internal"
+	"github.com/pinwang5776/silk/internal"
 )
 
 // -------------------- Decode --------------------

@@ -1,3 +1,3 @@
-module github.com/youthlin/silk
+module github.com/pinwang5776/silk
 
-go 1.20
+go 1.18

@@ -136,7 +136,7 @@ func getDecoderSize() (decSize int32) {
 // malloc wrap the C funcion malloc, return the pointer and free function.
 // 包装了 C 中的 malloc 函数，返回指向申请的内存的指针，和一个释放内存的 free 函数
 func malloc(size int32) (p unsafe.Pointer, free func()) {
-	p = C.malloc(C.ulong(size))
+	p = C.malloc(cUlong(size))
 	return p, func() {
 		C.free(p)
 	}
