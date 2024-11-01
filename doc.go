@@ -22,6 +22,13 @@ func WithSampleRate(sampleRate int) internal.DecodeOpt {
 
 // -------------------- Encode --------------------
 
+type Encoder = internal.Encoder
+
+// Encoder is a wrapper for encoding pcm to silk.
+func NewEncoder(opts ...internal.EncodeOpt) (*Encoder, error) {
+	return internal.NewEncoder(opts...)
+}
+
 // Encode encode pcm file to silk v3 type.
 // 将 pcm 格式编码为 silk v3 格式.
 func Encode(src io.Reader, opts ...internal.EncodeOpt) ([]byte, error) {

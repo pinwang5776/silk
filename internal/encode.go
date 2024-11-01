@@ -37,6 +37,62 @@ type EncodeCfg struct {
 
 type EncodeOpt func(*EncodeCfg)
 
+type Encoder struct {
+	cfg   *EncodeCfg
+	psEnc unsafe.Pointer
+	free  func()
+}
+
+func NewEncoder(opts ...EncodeOpt) (*Encoder, error) {
+	var cfg = buildCfg(opts...)
+	if cfg.SampleRate > MAX_API_FS_KHZ*1000 || cfg.SampleRate < 0 {
+		return nil, fmt.Errorf("error: API sampling rate = %d out of range, valid range 8000 - 48000", cfg.SampleRate)
+	}
+	/* Create Encoder */
+	var encSizeBytes = getEncoderSize()
+	var psEnc, free = malloc(encSizeBytes)
+
+	/* Reset Encoder */
+	initEncode(psEnc)
+
+	return &Encoder{
+		cfg:   cfg,
+		psEnc: psEnc,
+		free:  free,
+	}, nil
+}
+
+func (e *Encoder) EncodeHeader() ([]byte, error) {
+	var out = &bytes.Buffer{}
+	/* Add Silk header to stream */
+	if e.cfg.Stx {
+		out.Write([]byte{STX})
+	}
+	out.Write([]byte(Header))
+	return out.Bytes(), nil
+}
+
+func (e *Encoder) EncodeFrames(src io.Reader) ([]byte, error) {
+	var out = &bytes.Buffer{}
+	if err := doEncode(src, out, e.cfg, e.psEnc); err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
+
+}
+
+func (e *Encoder) EncodeFooter() ([]byte, error) {
+	var out = &bytes.Buffer{}
+	if !e.cfg.Stx {
+		binary.Write(out, binary.LittleEndian, int16(-1)) // footer block
+	}
+	return out.Bytes(), nil
+}
+
+func (e *Encoder) Close() {
+	e.free()
+}
+
 func Encode(src io.Reader, opts ...EncodeOpt) ([]byte, error) {
 	var cfg = buildCfg(opts...)
 	if cfg.SampleRate > MAX_API_FS_KHZ*1000 || cfg.SampleRate < 0 {
@@ -198,10 +254,5 @@ func doEncode(reader io.Reader, out io.Writer, cfg *EncodeCfg, psEnc unsafe.Poin
 			return fmt.Errorf("failed to write block data: %w", err)
 		}
 	}
-
-	if !cfg.Stx {
-		binary.Write(out, binary.LittleEndian, int16(-1)) // footer block
-	}
-
 	return nil
 }
